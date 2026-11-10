@@ -113,6 +113,7 @@ Pasos probados para las tareas habituales. Todas siguen el flujo de `SKILL.md`: 
 2. `update-menu-item {"item_id": 80, "title": "Contacto", "url": "/contacto/"}`. Para recolocarlo usa `position` (1 = primero) y `parent_id`.
 3. Nuevo enlace: `add-menu-item {"menu": "principal", "type": "custom", "title": "Blog", "url": "/blog/"}`, o `type: "page"` + `object_id`.
 4. El mega menú de un elemento se edita como un área: `get-theme-layout {"area": "menu_item:80"}` / `patch-layout {"area": "menu_item:80", ...}`.
+5. Datos extra de un elemento para diseños con fuente dinámica (YOOtheme 5.0.54+, consulta `customMenuItems` / `customMenuItem` con el ID del menú como **entero** en `arguments.id`): la descripción se escribe con `update-menu-item {"item_id": 80, "description": "…"}` (fuente `description`) y los campos de SCF de los grupos con la regla «Elemento de menú», con `update-custom-fields {"menu_item_id": 80, "fields": {…}}` (fuente `field.<nombre>`). Antes de 5.0.54 YOOtheme no los muestra.
 
 ## Cambiar el header y el logo
 

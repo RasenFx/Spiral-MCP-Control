@@ -30,7 +30,7 @@
                     "query": {
                       "name": "customMenuItems",
                       "arguments": {
-                        "menu": "2",
+                        "id": 2,
                         "parent": "0"
                       }
                     },

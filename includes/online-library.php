@@ -187,11 +187,11 @@ function spiral_mcp_online_import_images( array $tree, array $images ) {
 	require_once ABSPATH . 'wp-admin/includes/image.php';
 
 	$json   = spiral_mcp_json( $tree );
+	// Uploads sin subcarpeta, como BuilderController::loadImage de YOOtheme (5.0.54 vacía también "subdir").
 	$no_sub = function ( $upload ) {
-		if ( ! empty( $upload['subdir'] ) ) {
-			$upload['url']  = $upload['baseurl'];
-			$upload['path'] = $upload['basedir'];
-		}
+		$upload['url']    = $upload['baseurl'];
+		$upload['path']   = $upload['basedir'];
+		$upload['subdir'] = '';
 		return $upload;
 	};
 	$upload = wp_upload_dir( null, false );

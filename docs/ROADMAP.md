@@ -495,6 +495,19 @@ Un sitio real tiene campos propios (dirección, precio, galería, horario…) en
 
 ---
 
+## Fase 16 — Compatibilidad con YOOtheme 5.0.54 (v1.36.0)
+
+YOOtheme 5.0.54 (2026-11-09) añade a la fuente dinámica de elementos de menú la **descripción** y los **campos de ACF/SCF**, y cambia `BuilderController::loadImage`. Se actualizó el sitio de pruebas desde 5.0.53 y se repitieron las pruebas antes y después.
+
+- [x] Instalar 5.0.54 en local (copia de 5.0.53 en el scratchpad) y comparar `smoke.sh` antes y después.
+- [x] `description` en `add-menu-item`, `update-menu-item` y la salida de `get-menu` (el snapshot del menú ya la guardaba).
+- [x] `menu_item_id` en `list-custom-fields`, `get-custom-fields` y `update-custom-fields` (permiso `edit_theme_options`, snapshot `scf_values` con ref `menu_item:<id>`).
+- [x] `spiral_mcp_online_import_images()`: mismo filtro `upload_dir` que `loadImage` (vacía `subdir`).
+- [x] Comprobado en la web: una página con `customMenuItems` pinta `description` y `field.<nombre>` escritos por Spiral.
+- [x] Skill (receta de menús), CLAUDE.md, CHANGELOG, fixture `page-dynamic.json` (`arguments.id` entero).
+
+---
+
 ## Fuera de alcance en esta etapa
 - Instalar, activar o actualizar temas. Los plugins se tratan en la Fase 8.
 - WooCommerce: configurar pasarelas de pago, crear o editar pedidos a mano (líneas e importes), editar clientes, informes y analítica, suscripciones y extensiones de pago.

@@ -1,6 +1,6 @@
 # Referencia de abilities spiral-mcp/*
 
-Generada a partir de los esquemas registrados por el plugin (v1.35.0). Cada ability trae además su descripción completa en la lista de herramientas MCP: léela allí para los detalles. Aquí está la vista de conjunto: método implícito, parámetros obligatorios (**negrita**) y opcionales.
+Generada a partir de los esquemas registrados por el plugin (v1.36.0). Cada ability trae además su descripción completa en la lista de herramientas MCP: léela allí para los detalles. Aquí está la vista de conjunto: método implícito, parámetros obligatorios (**negrita**) y opcionales.
 
 Las abilities de YOOtheme (layouts, `get-yootheme-layout`, áreas del tema, configuración, plantillas, biblioteca, librería online y estilo) solo existen si YOOtheme Pro es el tema activo. En un sitio con Elementor el diseño va por las herramientas `elementor/*` de su MCP, y con Secure Custom Fields la estructura de los campos (grupos, campos, tipos, taxonomías y páginas de opciones) por las `scf/*` que registra SCF; ninguna de las dos está en esta referencia (Spiral solo las envuelve): lee su descripción en la lista de herramientas (ver «Sitios con Elementor» y «Campos personalizados» en `SKILL.md`).
 
@@ -117,8 +117,8 @@ Leyenda: lectura = no cambia nada; escritura = se registra en la auditoría; des
 | `create-menu` | escritura | **name** `string`, locations `array`, items `array`, language `string` |
 | `update-menu` | escritura | **menu** `integer / string`, name `string`, locations `array`, language `string` |
 | `delete-menu` | destructiva | **menu** `integer / string`, **confirm** `boolean` |
-| `add-menu-item` | escritura | **menu** `integer / string`, parent_id `integer`, position `integer`, title `string`, **type** `string`, url `string`, object_id `integer`, target_blank `boolean`, classes `string` |
-| `update-menu-item` | escritura | **item_id** `integer`, parent_id `integer`, position `integer`, title `string`, type `string`, url `string`, object_id `integer`, target_blank `boolean`, classes `string` |
+| `add-menu-item` | escritura | **menu** `integer / string`, parent_id `integer`, position `integer`, title `string`, **type** `string`, url `string`, object_id `integer`, target_blank `boolean`, classes `string`, description `string` |
+| `update-menu-item` | escritura | **item_id** `integer`, parent_id `integer`, position `integer`, title `string`, type `string`, url `string`, object_id `integer`, target_blank `boolean`, classes `string`, description `string` |
 | `delete-menu-item` | destructiva | **item_id** `integer`, delete_children `boolean` |
 
 ## Medios
@@ -213,9 +213,9 @@ Leyenda: lectura = no cambia nada; escritura = se registra en la auditoría; des
 
 | Ability | Tipo | Parámetros |
 |---|---|---|
-| `list-custom-fields` | lectura | id `integer`, term_id `integer`, options_page `string`, post_type `string`, taxonomy `string` |
-| `get-custom-fields` | lectura | id `integer`, term_id `integer`, options_page `string` |
-| `update-custom-fields` | escritura | id `integer`, term_id `integer`, options_page `string`, **fields** `object` |
+| `list-custom-fields` | lectura | id `integer`, term_id `integer`, menu_item_id `integer`, options_page `string`, post_type `string`, taxonomy `string` |
+| `get-custom-fields` | lectura | id `integer`, term_id `integer`, menu_item_id `integer`, options_page `string` |
+| `update-custom-fields` | escritura | id `integer`, term_id `integer`, menu_item_id `integer`, options_page `string`, **fields** `object` |
 
 ## Tienda (WooCommerce)
 

@@ -187,6 +187,9 @@ SNAP_BEFORE_ADD=$(jget snapshot_id)
 call POST spiral-mcp/update-menu-item "{\"item_id\":$ITEM_ID,\"title\":\"Contáctanos\",\"position\":1}"
 check 'update-menu-item' 200 snapshot_id
 eq 'update-menu-item lo pone primero' 'items.0.title' 'Contáctanos'
+call POST spiral-mcp/update-menu-item "{\"item_id\":$ITEM_ID,\"description\":\"Escríbenos <b>hoy</b>\"}"
+check 'update-menu-item con description' 200 snapshot_id
+eq 'update-menu-item: description en texto plano' 'items.0.description' 'Escríbenos hoy'
 
 call POST spiral-mcp/restore-snapshot "{\"id\":$SNAP_BEFORE_ADD}"
 [ "$STATUS" -ge 400 ] && ok 'restore-snapshot sin confirm se rechaza' || ko 'restore-snapshot sin confirm'
@@ -630,6 +633,8 @@ if [ "$STATUS" = 200 ]; then
 		check 'restore-snapshot scf_values' 200 restored
 		call GET spiral-mcp/get-custom-fields "{\"id\":$PAGE_ID}"
 		eq 'restore-snapshot: subtítulo vacío otra vez' fields.smk_subtitulo null
+		call GET spiral-mcp/get-custom-fields '{"menu_item_id":999999}'
+		check 'get-custom-fields: menu_item_id inexistente' 404
 		call POST spiral-mcp/create-content "{\"post_type\":\"page\",\"title\":\"Smoke SCF\",\"status\":\"draft\",\"fields\":{\"smk_subtitulo\":\"Nueva\"}}"
 		if check 'create-content con fields' 200 id fields; then
 			SCF_PAGE=$(jget id)

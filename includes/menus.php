@@ -50,6 +50,7 @@ function spiral_mcp_menu_item_out( $item ) {
 		'position'     => (int) $item->menu_order,
 		'target_blank' => '_blank' === $item->target,
 		'classes'      => trim( implode( ' ', array_filter( (array) $item->classes ) ) ),
+		'description'  => (string) $item->description,
 	);
 	if ( ! empty( $item->_invalid ) ) {
 		$out['invalid'] = true; // El contenido enlazado ya no existe.
@@ -206,6 +207,9 @@ function spiral_mcp_menu_item_args( array $in, array $base = array() ) {
 	}
 	if ( isset( $in['classes'] ) ) {
 		$args['menu-item-classes'] = (string) $in['classes'];
+	}
+	if ( isset( $in['description'] ) ) {
+		$args['menu-item-description'] = sanitize_textarea_field( (string) $in['description'] );
 	}
 	if ( isset( $in['parent_id'] ) ) {
 		$args['menu-item-parent-id'] = (int) $in['parent_id'];
@@ -475,6 +479,7 @@ add_action( 'wp_abilities_api_init', function () {
 		'object_id'    => array( 'type' => 'integer', 'description' => 'ID de la página, entrada o término cuando type no es custom.' ),
 		'target_blank' => array( 'type' => 'boolean', 'description' => 'Abrir en pestaña nueva.' ),
 		'classes'      => array( 'type' => 'string', 'description' => 'Clases CSS separadas por espacio.' ),
+		'description'  => array( 'type' => 'string', 'description' => 'Descripción del elemento (texto plano; "" la borra). Solo se ve si el tema la muestra: en YOOtheme 5.0.54+ es el campo "Description" de la fuente dinámica de elementos de menú.' ),
 	);
 
 	/* 1. Listar menús ---------------------------------------------------- */
@@ -716,7 +721,7 @@ add_action( 'wp_abilities_api_init', function () {
 	/* 7. Editar elemento ------------------------------------------------- */
 	spiral_mcp_register_ability( 'spiral-mcp/update-menu-item', array(
 		'label'               => 'Editar elemento de menú',
-		'description'         => 'Cambia texto, enlace, destino, clases, padre o posición de un elemento. Solo se modifican los campos enviados. "position" (1 = primero) lo reubica entre sus hermanos. Antes guarda un snapshot del menú.',
+		'description'         => 'Cambia texto, enlace, destino, clases, descripción, padre o posición de un elemento. Solo se modifican los campos enviados. "position" (1 = primero) lo reubica entre sus hermanos. Antes guarda un snapshot del menú.',
 		'category'            => 'spiral-mcp-menus',
 		'group'               => 'design',
 		'log'                 => array( 'type' => 'menu_item', 'id' => 'item_id' ),

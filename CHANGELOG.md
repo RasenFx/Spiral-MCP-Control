@@ -2,6 +2,19 @@
 
 Todos los cambios relevantes de Spiral-MCP-Control. Versionado [SemVer](https://semver.org/lang/es/).
 
+## [1.36.0] — 2026-11-09 · Compatibilidad con YOOtheme 5.0.54
+
+Probado de YOOtheme 5.0.53 a 5.0.54 en el sitio de pruebas: la prueba de humo da el mismo resultado antes y después de actualizar el tema.
+
+### Añadido
+- `add-menu-item` y `update-menu-item` aceptan `description` (texto plano; `""` la borra) y `get-menu` / `create-menu` / `update-menu` la devuelven en cada elemento. YOOtheme 5.0.54 la muestra en la fuente dinámica de elementos de menú (campo `description`).
+- `list-custom-fields`, `get-custom-fields` y `update-custom-fields` aceptan `menu_item_id`: campos de Secure Custom Fields de los grupos con la regla de ubicación «Elemento de menú» (por menú o por ubicación). YOOtheme 5.0.54 los muestra en la fuente de elementos de menú (`field.<nombre>`). Exige `edit_theme_options`; snapshot `scf_values` con referencia `menu_item:<id>`.
+- Skill: paso nuevo en la receta «Cambiar un elemento del menú».
+
+### Cambiado
+- Librería online: al importar imágenes, el filtro `upload_dir` vacía también `subdir` y se aplica siempre, como `BuilderController::loadImage` de YOOtheme 5.0.54.
+- `tests/fixtures/page-dynamic.json`: `customMenuItems` recibe el menú en `arguments.id` (entero), como lo guarda YOOtheme.
+
 ## [1.35.0] — 2026-10-30 · Campos personalizados con Secure Custom Fields
 
 ### Añadido

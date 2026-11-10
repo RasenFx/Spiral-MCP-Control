@@ -61,6 +61,16 @@ function spiral_mcp_scf_target( array $input, $write = false ) {
 		}
 		return array( $post->ID, array( 'post_id' => $post->ID, 'post_type' => $post->post_type ), sprintf( 'contenido %d (%s)', $post->ID, $post->post_type ) );
 	}
+	if ( ! empty( $input['menu_item_id'] ) ) {
+		$item = spiral_mcp_scf_menu_item( (int) $input['menu_item_id'] );
+		if ( is_wp_error( $item ) ) {
+			return $item;
+		}
+		if ( $write && ! current_user_can( 'edit_theme_options' ) ) {
+			return new WP_Error( 'spiral_mcp_forbidden', 'No puedes editar los menús.', array( 'status' => 403 ) );
+		}
+		return array( $item[0], $item[1], sprintf( 'elemento de menú %d', $item[0] ) );
+	}
 	if ( ! empty( $input['term_id'] ) ) {
 		$term = spiral_mcp_term_get( (int) $input['term_id'] );
 		if ( is_wp_error( $term ) ) {
@@ -84,7 +94,21 @@ function spiral_mcp_scf_target( array $input, $write = false ) {
 		}
 		return array( $page['post_id'], array( 'options_page' => $page['menu_slug'] ), sprintf( 'página de opciones "%s"', $page['menu_slug'] ) );
 	}
-	return new WP_Error( 'spiral_mcp_bad_input', 'Indica "id" (contenido), "term_id" (término) u "options_page" (slug de una página de opciones de SCF).' );
+	return new WP_Error( 'spiral_mcp_bad_input', 'Indica "id" (contenido), "term_id" (término), "menu_item_id" (elemento de menú) u "options_page" (slug de una página de opciones de SCF).' );
+}
+
+/**
+ * Elemento de menú como objetivo de SCF: [ ID, args de ubicación ] o WP_Error. La regla de
+ * ubicación "Elemento de menú" de SCF compara el menú al que pertenece (o su ubicación).
+ * YOOtheme 5.0.54+ lee estos campos en la fuente dinámica de elementos de menú.
+ */
+function spiral_mcp_scf_menu_item( $item_id ) {
+	if ( ! is_nav_menu_item( (int) $item_id ) ) {
+		return new WP_Error( 'spiral_mcp_not_found', 'No existe un elemento de menú con ese ID (ver spiral-mcp/get-menu).' );
+	}
+	$terms = wp_get_object_terms( (int) $item_id, 'nav_menu', array( 'fields' => 'ids' ) );
+	$menu  = ! is_wp_error( $terms ) && $terms ? (int) $terms[0] : 0;
+	return array( (int) $item_id, array( 'nav_menu_item' => (int) $item_id, 'nav_menu' => $menu ) );
 }
 
 /** Páginas de opciones registradas (con la UI de SCF o por código). */
@@ -717,6 +741,9 @@ function spiral_mcp_scf_ref( $post_id, array $location ) {
 	if ( isset( $location['taxonomy'] ) ) {
 		return 'term:' . (int) substr( (string) $post_id, 5 );
 	}
+	if ( isset( $location['nav_menu_item'] ) ) {
+		return 'menu_item:' . (int) $post_id;
+	}
 	return 'options:' . $post_id . '|' . ( $location['options_page'] ?? '' );
 }
 
@@ -730,6 +757,10 @@ function spiral_mcp_scf_ref_target( $ref ) {
 	if ( 'term' === $kind ) {
 		$term = get_term( (int) $rest );
 		return $term && ! is_wp_error( $term ) ? array( 'term_' . $term->term_id, array( 'taxonomy' => $term->taxonomy ) ) : null;
+	}
+	if ( 'menu_item' === $kind ) {
+		$item = spiral_mcp_scf_menu_item( (int) $rest );
+		return is_wp_error( $item ) ? null : $item;
 	}
 	if ( 'options' === $kind ) {
 		list( $post_id, $slug ) = array_pad( explode( '|', $rest, 2 ), 2, '' );
@@ -1142,7 +1173,7 @@ add_action( 'wp_abilities_api_categories_init', function () {
 	}
 	wp_register_ability_category( 'spiral-mcp-fields', array(
 		'label'       => 'Campos personalizados Spiral-MCP',
-		'description' => 'Valores de los campos de Secure Custom Fields en contenidos, términos y páginas de opciones.',
+		'description' => 'Valores de los campos de Secure Custom Fields en contenidos, términos, elementos de menú y páginas de opciones.',
 	) );
 } );
 
@@ -1153,6 +1184,7 @@ add_action( 'wp_abilities_api_init', function () {
 	$target_props = array(
 		'id'           => array( 'type' => 'integer', 'description' => 'ID de un contenido (página, entrada o tipo personalizado).' ),
 		'term_id'      => array( 'type' => 'integer', 'description' => 'ID de un término (categoría, etiqueta o taxonomía personalizada).' ),
+		'menu_item_id' => array( 'type' => 'integer', 'description' => 'ID de un elemento de menú (ver spiral-mcp/get-menu): campos de grupos con la regla de ubicación "Elemento de menú". YOOtheme 5.0.54+ los muestra en la fuente dinámica de elementos de menú.' ),
 		'options_page' => array( 'type' => 'string', 'description' => 'Slug de menú de una página de opciones de SCF (ver spiral-mcp/list-custom-fields sin parámetros).' ),
 	);
 	$can_read = function ( $input = array() ) {
@@ -1160,7 +1192,7 @@ add_action( 'wp_abilities_api_init', function () {
 		if ( ! empty( $input['term_id'] ) ) {
 			return current_user_can( 'manage_categories' );
 		}
-		if ( ! empty( $input['options_page'] ) ) {
+		if ( ! empty( $input['options_page'] ) || ! empty( $input['menu_item_id'] ) ) {
 			return current_user_can( 'edit_theme_options' );
 		}
 		return current_user_can( 'edit_posts' );
@@ -1169,7 +1201,7 @@ add_action( 'wp_abilities_api_init', function () {
 	/* 1. Qué campos hay ---------------------------------------------------- */
 	spiral_mcp_register_ability( 'spiral-mcp/list-custom-fields', array(
 		'label'               => 'Listar campos personalizados (SCF)',
-		'description'         => 'Qué campos personalizados de Secure Custom Fields aplican a un objeto y cómo se escribe cada valor. Con "post_type" (o "id"), los grupos y campos de ese tipo de contenido; con "taxonomy" (o "term_id"), los de sus términos; con "options_page", los de esa página de opciones. Cada campo trae name, type, required, "value" (qué enviar: ID de medio, lista de IDs, clave de "choices", fila de subcampos…), choices, sub_fields y layouts. Sin parámetros: todos los grupos de campos del sitio (título, clave, reglas de ubicación, número de campos) y las páginas de opciones. Para crear o cambiar grupos y campos, las herramientas scf/* (scf/create-field-group…).',
+		'description'         => 'Qué campos personalizados de Secure Custom Fields aplican a un objeto y cómo se escribe cada valor. Con "post_type" (o "id"), los grupos y campos de ese tipo de contenido; con "taxonomy" (o "term_id"), los de sus términos; con "menu_item_id", los de ese elemento de menú; con "options_page", los de esa página de opciones. Cada campo trae name, type, required, "value" (qué enviar: ID de medio, lista de IDs, clave de "choices", fila de subcampos…), choices, sub_fields y layouts. Sin parámetros: todos los grupos de campos del sitio (título, clave, reglas de ubicación, número de campos) y las páginas de opciones. Para crear o cambiar grupos y campos, las herramientas scf/* (scf/create-field-group…).',
 		'category'            => 'spiral-mcp-fields',
 		'group'               => 'content',
 		'input_schema'        => array(
@@ -1195,7 +1227,7 @@ add_action( 'wp_abilities_api_init', function () {
 				}
 				$location = array( 'taxonomy' => (string) $input['taxonomy'] );
 				$label    = 'taxonomía ' . $input['taxonomy'];
-			} elseif ( ! empty( $input['id'] ) || ! empty( $input['term_id'] ) || ! empty( $input['options_page'] ) ) {
+			} elseif ( ! empty( $input['id'] ) || ! empty( $input['term_id'] ) || ! empty( $input['menu_item_id'] ) || ! empty( $input['options_page'] ) ) {
 				$target = spiral_mcp_scf_target( $input );
 				if ( is_wp_error( $target ) ) {
 					return $target;
@@ -1225,7 +1257,7 @@ add_action( 'wp_abilities_api_init', function () {
 	/* 2. Leer valores ------------------------------------------------------ */
 	spiral_mcp_register_ability( 'spiral-mcp/get-custom-fields', array(
 		'label'               => 'Leer campos personalizados (SCF)',
-		'description'         => 'Valores de los campos de Secure Custom Fields de un contenido ("id"), un término ("term_id") o una página de opciones ("options_page"): "fields" tal como se escriben (IDs de medios y contenidos, claves de opciones, filas de repetidores) y "resolved" con los medios, contenidos, términos y usuarios expandidos. spiral-mcp/get-content ya incluye lo mismo para los contenidos.',
+		'description'         => 'Valores de los campos de Secure Custom Fields de un contenido ("id"), un término ("term_id"), un elemento de menú ("menu_item_id") o una página de opciones ("options_page"): "fields" tal como se escriben (IDs de medios y contenidos, claves de opciones, filas de repetidores) y "resolved" con los medios, contenidos, términos y usuarios expandidos. spiral-mcp/get-content ya incluye lo mismo para los contenidos.',
 		'category'            => 'spiral-mcp-fields',
 		'group'               => 'content',
 		'input_schema'        => array( 'type' => 'object', 'properties' => $target_props ),
@@ -1244,13 +1276,16 @@ add_action( 'wp_abilities_api_init', function () {
 	/* 3. Escribir valores -------------------------------------------------- */
 	spiral_mcp_register_ability( 'spiral-mcp/update-custom-fields', array(
 		'label'               => 'Cambiar campos personalizados (SCF)',
-		'description'         => 'Escribe valores de campos de Secure Custom Fields en un contenido ("id"), un término ("term_id") o una página de opciones ("options_page"): "fields" = {nombre: valor}; solo cambian los enviados y null borra uno. Lee antes spiral-mcp/list-custom-fields (qué campos aplican y qué forma tiene cada valor) y spiral-mcp/get-custom-fields. Los valores se validan como en el editor (obligatorios, tipos, filas de repetidores por subcampo) y el HTML se filtra sin unfiltered_html. Guarda un snapshot ("snapshot_id", kind scf_values). Para los contenidos también vale "fields" en spiral-mcp/update-content.',
+		'description'         => 'Escribe valores de campos de Secure Custom Fields en un contenido ("id"), un término ("term_id"), un elemento de menú ("menu_item_id") o una página de opciones ("options_page"): "fields" = {nombre: valor}; solo cambian los enviados y null borra uno. Lee antes spiral-mcp/list-custom-fields (qué campos aplican y qué forma tiene cada valor) y spiral-mcp/get-custom-fields. Los valores se validan como en el editor (obligatorios, tipos, filas de repetidores por subcampo) y el HTML se filtra sin unfiltered_html. Guarda un snapshot ("snapshot_id", kind scf_values). Para los contenidos también vale "fields" en spiral-mcp/update-content.',
 		'category'            => 'spiral-mcp-fields',
 		'group'               => 'content',
 		'log'                 => array(
 			'type' => 'scf_values',
 			'id'   => function ( $input ) {
 				$input = (array) $input;
+				if ( ! empty( $input['menu_item_id'] ) ) {
+					return 'menu_item:' . (int) $input['menu_item_id'];
+				}
 				return ! empty( $input['id'] ) ? 'post:' . (int) $input['id'] : ( ! empty( $input['term_id'] ) ? 'term:' . (int) $input['term_id'] : 'options:' . (string) ( $input['options_page'] ?? '' ) );
 			},
 		),
@@ -1264,7 +1299,7 @@ add_action( 'wp_abilities_api_init', function () {
 			if ( ! empty( $input['term_id'] ) ) {
 				return current_user_can( 'manage_categories' );
 			}
-			if ( ! empty( $input['options_page'] ) ) {
+			if ( ! empty( $input['options_page'] ) || ! empty( $input['menu_item_id'] ) ) {
 				return current_user_can( 'edit_theme_options' );
 			}
 			return ! empty( $input['id'] ) && current_user_can( 'edit_post', (int) $input['id'] );
